@@ -1,0 +1,79 @@
+image:
+  pullPolicy: Always
+
+rabbitmq:
+  existingPasswordSecret: rabbitmq-password
+  existingErlangSecret: rabbitmq-erlang-cookie
+  # plugins: "rabbitmq_management rabbitmq_peer_discovery_k8s"
+  clustering:
+    address_type: ip
+    k8s_domain: cluster.local
+
+ ## Configuration file content: required cluster configuration
+  ## Do not override unless you know what you are doing. To add more configuration, use `extraConfiguration` instead
+  configuration: |-
+    ## Clustering
+    cluster_formation.peer_discovery_backend  = rabbit_peer_discovery_k8s
+    cluster_formation.k8s.host = kubernetes.default.svc.cluster.local
+    cluster_formation.node_cleanup.interval = 10
+    cluster_formation.node_cleanup.only_log_warning = true
+    cluster_partition_handling = autoheal
+    # queue master locator
+    queue_master_locator=min-masters
+    # enable guest user
+    loopback_users.guest = false
+
+service:
+  type: ClusterIP
+  clusterIP: 10.15.245.1
+  port: 5672
+  distPort: 25672
+  managerPort: 15672
+
+persistence:
+  size: 8Gi
+  path: /opt/bitnami/rabbitmq/var/lib/rabbitmq
+
+replicas: 1
+
+## updateStrategy for RabbitMQ statefulset
+## ref: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#update-strategies
+updateStrategy:
+  type: RollingUpdate
+
+ingress:
+  enabled: false
+  hostName: rabbitmq.staging.mikrowezel.localhost
+  path: /
+
+## The following settings are to configure the frequency of the lifeness and readiness probes
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 120
+  timeoutSeconds: 20
+  periodSeconds: 30
+  failureThreshold: 6
+  successThreshold: 1
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 10
+  timeoutSeconds: 20
+  periodSeconds: 30
+  failureThreshold: 3
+successThreshold: 1
+
+
+## Pod Security Context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+##
+securityContext:
+  enabled: true
+  fsGroup: 1001
+  runAsUser: 1001
+
+volumePermissions:
+  enabled: true
+
+
+

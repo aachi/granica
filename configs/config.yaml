@@ -1,0 +1,31 @@
+app:
+  logLevel: "debug"
+
+repo:
+  type: "mongodb"
+  mongodb:
+    user: "granica"
+    password: "granica"
+    host: "localhost"
+    port: 27017
+
+broker:
+  type: "rabbitmq"
+  rabbitmq:
+    user: "granica"
+    password: "granica"
+    host: "localhost"
+    port: 5672
+    exchange: "default"
+    queue: "authentication"
+
+  cache:
+    type: "cache"
+    redis:
+      user: "granica"
+      password: "granica"
+      host: "localhost"
+      port: 8086
+      exchange: "default"
+      queue: "authentication"
+

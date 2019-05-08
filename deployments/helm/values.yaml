@@ -1,0 +1,61 @@
+name: ituran-tcp-server-go
+
+service:
+  type: NodePort
+  nodePort: ""
+  port: 2011
+
+deployment:
+  replicaCount: 1
+  port: 2011
+
+  image:
+    private: true
+    repository: adrianpksw
+    tag: stg
+    pullPolicy: Always
+    volumeMounts:
+      configSecretMountPath: /configs
+    volumes:
+      configSecretMountName: config-volume
+      configSecretName: granica-config
+  container:
+    env:
+      - name: REPO_TYPE
+        value: "mongodb"
+      - name: MONGODB_HOST
+        value: "localhost"
+      - name: MONGODB_PORT
+        value: "27017"
+      - name: MONGODB_USER
+        value: "granica"
+      - name: MONGODB_PASSWORD
+        value: "granica"
+      - name: MONGODB_DB
+        value: "granica"
+      - name: BROKER_TYPE
+        value: "rabbitmq"
+      - name: RABBITMQ_HOST
+        value: "localhost"
+      - name: RABBITMQ_PORT
+        value: "5672"
+      - name: RABBITMQ_USER
+        value: "granica"
+      - name: RABBITMQ_PASSWORD
+        value: "granica"
+      - name: RABBITMQ_EXCHANGE
+        value: "default"
+      - name: RABBITMQ_QUEUE
+        value: "main"
+      - name: CACHE_TYPE
+        value: "redis"
+      - name: REDIS_HOST
+        value: "localhost"
+      - name: REDIS_PORT
+        value: "6379"
+      - name: REDIS_DB
+        value: "0"
+      - name: REDIS_USER
+        value: "granica"
+      - name: REDIS_PASSWORD
+        value: "granica"

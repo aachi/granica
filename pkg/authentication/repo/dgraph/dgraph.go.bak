@@ -1,0 +1,162 @@
+package authentication
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+
+	"gitlab.com/mikrowezel/backend/granica/internal/config"
+	// c "gitlab.com/mikrowezel/backend/granica/internal/config"
+	m "gitlab.com/mikrowezel/backend/granica/pkg/models"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+type userRepo struct {
+	ctx  context.Context
+	conn *mongo.Client
+	coll *mongo.Collection
+}
+
+// Insert a user in Repo.
+func (r *userRepo) Insert(user *m.User) (id interface{}, err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	res, err := r.coll.InsertOne(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+	return res.InsertedID, nil
+}
+
+// GetAll users from repo.
+func (r *userRepo) GetAll() ([]m.User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var users []m.User
+
+	cur, err := r.coll.Find(ctx, bson.D{})
+	if err != nil {
+		return users, err
+	}
+
+	for cur.Next(ctx) {
+		u := m.User{}
+		err = cur.Decode(&u)
+		if err != nil {
+			return users, err
+		}
+		users = append(users, u)
+	}
+	return users, nil
+}
+
+// Get a users from repo by its ID.
+func (r *userRepo) Get(id interface{}) (*m.User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var user m.User
+
+	filter := bson.M{"ID": id}
+	err := r.coll.FindOne(ctx, filter).Decode(&user)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+// Get a users from repo by its username and tenant.
+func (r *userRepo) GetByUsernameAndTenant(username, tenantID string) (*m.User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var user m.User
+
+	filter := bson.M{"Username": username, "TenantID": tenantID}
+	err := r.coll.FindOne(ctx, filter).Decode(&user)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+// Update a user in Repo.
+func (r *userRepo) Update(user *m.User) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"ID": user.ID}
+	_, err := r.coll.UpdateOne(ctx, filter, user)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Delete a user from repo.
+func (r *userRepo) Delete(id interface{}) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"ID": id}
+	_, err := r.coll.DeleteOne(ctx, filter)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// InitRepo using configuration.
+func InitRepo(ctx context.Context, cfg *config.Config) (Repo, error) {
+	conn, err := getConn(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return makeRepo(conn), nil
+}
+
+func makeRepo(c *mongo.Client) *userRepo {
+	return &userRepo{
+		conn: c,
+		coll: c.Database("granica").Collection("users"),
+	}
+}
+
+// getConn returns a Mongo connected client.
+func getConn(cfg *config.Config) (*mongo.Client, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	url := fmt.Sprintf("mongodb://%s:%d", cfg.Repo.MongoDB.Host, cfg.Repo.MongoDB.Port)
+
+	client, err := mongo.NewClient(options.Client().ApplyURI(url))
+	if err != nil {
+		// gs.Logger().Log("level", c.LogLevel.Error, "message", "MongoDB: Cannot create a client.", "err", err.Error())
+		return nil, err
+	}
+
+	err = client.Connect(ctx)
+	if err != nil {
+		// gs.Logger().Log("level", c.LogLevel.Error, "message", "MongoDB: Cannot create a connection.", "err", err.Error())
+		return nil, err
+	}
+
+	err = client.Ping(context.TODO(), nil)
+	if err != nil {
+		// gs.Logger().Log("level", c.LogLevel.Error, "message", "MongoDB: connection ping error.", "err", err.Error())
+		return nil, err
+	}
+
+	// gs.Logger().Log("level", c.LogLevel.Info, "message", "MongoDB: Connected!")
+
+	return client, err
+}

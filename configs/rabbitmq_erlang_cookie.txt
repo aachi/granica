@@ -1,0 +1,2 @@
+rabbitmq-erlang-cookie=MfLSfW+VMwIwymCIjaB34z2v7rY21Jtu1
+
