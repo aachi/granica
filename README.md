@@ -7,7 +7,7 @@
 
 
 # Overview (draft)
-[<img src="docs/images/overview.png" width="1200">](docs/overview.md)
+[<img src="docs/images/granica-overview.svg" width="600">](docs/overview.md)
 
 [To be completed]
 
